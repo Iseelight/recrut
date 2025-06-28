@@ -470,7 +470,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4 w-full">
+    <div className="min-h-screen bg-[#e5ded8] dark:bg-gray-900 p-4 w-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -486,16 +486,16 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Chat Panel */}
           <div className="lg:col-span-2">
-            <Card className="h-[500px] sm:h-[600px] flex flex-col w-full">
+            <div className="flex flex-col h-[500px] sm:h-[600px] rounded-lg overflow-hidden shadow-lg">
               {/* Chat Header */}
-              <div className="border-b border-gray-200 dark:border-gray-700 p-4">
+              <div className="bg-[#075e54] dark:bg-gray-800 text-white p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                     <Bot className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">AI Interviewer</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <h3 className="font-semibold">AI Interviewer</h3>
+                    <p className="text-sm text-white/70">
                       {isAISpeaking ? (
                         <span className="flex items-center gap-1">
                           <Volume2 className="w-4 h-4" />
@@ -503,50 +503,45 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                         </span>
                       ) : isTyping ? (
                         <span className="flex items-center gap-1">
-                          <span>Typing</span>
+                          <span>typing</span>
                           <div className="flex space-x-1">
-                            <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                            <div className="w-1 h-1 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-1 h-1 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-1 h-1 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                           </div>
                         </span>
                       ) : waitingForUserResponse ? (
-                        <span>Waiting for your response</span>
-                      ) : 'Ready to chat'}
+                        <span>online</span>
+                      ) : 'online'}
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#e5ded8] dark:bg-gray-900 bg-[url('https://web.whatsapp.com/img/bg-chat-tile-light_a4be8c63045ee0818e91158723c10110.png')] dark:bg-[url('https://web.whatsapp.com/img/bg-chat-tile-dark_a4be8c63045ee0818e91158723c10110.png')] bg-repeat">
                 {messages.map((message) => (
                   <div
                     key={message.id === 'interim-message' ? 'interim-message' : message.id}
-                    className={`flex gap-3 ${message.sender === 'candidate' ? 'flex-row-reverse' : ''}`}
+                    className={`flex ${message.sender === 'candidate' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className={`
-                      w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
-                      ${message.sender === 'ai' 
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600' 
-                        : 'bg-gray-600 dark:bg-gray-500'
-                      }
-                    `}>
-                      {message.sender === 'ai' ? (
-                        <Bot className="w-4 h-4 text-white" />
-                      ) : (
-                        <User className="w-4 h-4 text-white" />
+                    <div
+                      className={`max-w-[75%] p-3 rounded-lg relative ${
+                        message.sender === 'ai'
+                          ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tr-lg rounded-br-lg rounded-bl-lg'
+                          : message.isInterim
+                            ? 'bg-[#dcf8c6] dark:bg-green-700 text-gray-900 dark:text-white rounded-tl-lg rounded-br-lg rounded-bl-lg'
+                            : 'bg-[#dcf8c6] dark:bg-green-700 text-gray-900 dark:text-white rounded-tl-lg rounded-br-lg rounded-bl-lg'
+                      }`}
+                    >
+                      {/* Message triangle */}
+                      {message.sender === 'ai' && (
+                        <div className="absolute -left-2 top-0 w-0 h-0 border-t-8 border-r-8 border-b-0 border-l-0 border-white dark:border-gray-800"></div>
                       )}
-                    </div>
-                    <div className={`
-                      max-w-[85%] sm:max-w-[80%] p-3 rounded-lg
-                      ${message.sender === 'ai' 
-                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white' 
-                        : message.isInterim
-                          ? 'bg-blue-400 text-white'
-                          : 'bg-blue-600 text-white'
-                      }
-                    `}>
+                      {message.sender === 'candidate' && !message.isInterim && (
+                        <div className="absolute -right-2 top-0 w-0 h-0 border-t-8 border-l-8 border-b-0 border-r-0 border-[#dcf8c6] dark:border-green-700"></div>
+                      )}
+                      
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">
                         {message.message}
                         {message.isInterim && <span className="ml-1 animate-pulse">|</span>}
@@ -554,7 +549,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                       
                       {/* Audio playback for messages with audio */}
                       {message.audioBlob && (
-                        <div className="mt-2 pt-2 border-t border-white/20">
+                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                           <button
                             onClick={() => {
                               if (message.audioBlob) {
@@ -563,7 +558,11 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                                 audio.play();
                               }
                             }}
-                            className="flex items-center space-x-1 text-xs text-white/80 hover:text-white transition-colors"
+                            className={`flex items-center space-x-1 text-xs ${
+                              message.sender === 'candidate' 
+                                ? 'text-gray-700 dark:text-gray-300' 
+                                : 'text-gray-700 dark:text-gray-300'
+                            } hover:opacity-80 transition-opacity`}
                           >
                             <Volume2 className="h-3 w-3" />
                             <span>Play Audio</span>
@@ -571,22 +570,19 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                         </div>
                       )}
                       
-                      <span className="text-xs opacity-70 mt-1 block">
+                      <div className="mt-1 text-xs opacity-70 text-right">
                         {message.isInterim ? 'Speaking...' : new Date(message.timestamp).toLocaleTimeString([], { 
                           hour: '2-digit', 
                           minute: '2-digit' 
                         })}
-                      </span>
+                      </div>
                     </div>
                   </div>
                 ))}
                 
                 {isTyping && (
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
-                      <Bot className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                  <div className="flex justify-start">
+                    <div className="bg-white dark:bg-gray-800 p-3 rounded-lg rounded-tl-none">
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -599,24 +595,25 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
               </div>
 
               {/* Input */}
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex gap-2">
+              <div className="bg-[#f0f2f5] dark:bg-gray-800 p-3">
+                <div className="flex items-center gap-2">
                   <Button
                     onClick={toggleMicrophone}
-                    variant={isRecording ? "destructive" : "outline"}
-                    className="px-3"
+                    variant="ghost"
+                    size="icon"
+                    className={`rounded-full ${isRecording ? 'text-red-500 bg-red-100 dark:bg-red-900/20' : 'text-gray-500 dark:text-gray-400'}`}
                     disabled={isTyping || isAISpeaking || !waitingForUserResponse}
                   >
                     {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
                   </Button>
-                  <div className="flex-1">
+                  <div className="flex-1 bg-white dark:bg-gray-700 rounded-full">
                     <textarea
                       ref={textareaRef}
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder={waitingForUserResponse ? "Type your response..." : "Waiting for AI to finish..."}
-                      className="w-full resize-none px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[40px] max-h-[120px] bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder={waitingForUserResponse ? "Type a message" : "Waiting for AI to finish..."}
+                      className="w-full resize-none px-4 py-2 border-none rounded-full focus:ring-0 focus:outline-none min-h-[40px] max-h-[120px] bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       rows={1}
                       disabled={isTyping || isRecording || isAISpeaking || !waitingForUserResponse}
                     />
@@ -624,9 +621,11 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                   <Button 
                     onClick={() => handleSendMessage(inputMessage)}
                     disabled={!inputMessage.trim() || isTyping || isAISpeaking || !waitingForUserResponse}
-                    className="px-4"
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full bg-[#075e54] dark:bg-green-700 text-white hover:bg-[#054c44] dark:hover:bg-green-800"
                   >
-                    <Send className="h-4 w-4" />
+                    <Send className="h-5 w-5" />
                   </Button>
                 </div>
                 
@@ -638,13 +637,13 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                 )}
                 
                 {isAISpeaking && (
-                  <div className="mt-2 flex items-center justify-center gap-2 text-blue-600">
+                  <div className="mt-2 flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400">
                     <Volume2 className="w-4 h-4" />
                     <span className="text-sm font-medium">AI is speaking... Please wait</span>
                   </div>
                 )}
               </div>
-            </Card>
+            </div>
           </div>
 
           {/* Side Panel */}
@@ -662,7 +661,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-[#25d366] dark:bg-green-600 h-2 rounded-full transition-all duration-300"
                       style={{
                         width: `${(currentQuestionIndex / config.questions.length) * 100}%`
                       }}
@@ -701,10 +700,10 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
 
             {/* Instructions */}
             <Card>
-              <CardHeader>
+              <CardHeader className="bg-[#075e54] dark:bg-gray-800 text-white">
                 <CardTitle className="text-sm">Instructions</CardTitle>
               </CardHeader>
-              <CardContent className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+              <CardContent className="text-sm text-gray-600 dark:text-gray-400 space-y-2 pt-4">
                 <p>• Click the microphone icon to toggle recording</p>
                 <p>• Or type your response in the text box</p>
                 <p>• Keep your face visible to the camera</p>
@@ -713,39 +712,59 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
               </CardContent>
             </Card>
             
-            {/* Audio Controls */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Audio Controls</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Microphone</span>
-                    <Button
-                      variant={isRecording ? "destructive" : "outline"}
-                      size="sm"
-                      onClick={toggleMicrophone}
-                      disabled={isTyping || isAISpeaking || !waitingForUserResponse}
-                    >
-                      {isRecording ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
-                      {isRecording ? 'Stop' : 'Start'}
-                    </Button>
+            {/* Audio Status */}
+            {(isRecording || interimTranscript || isAISpeaking) && (
+              <Card>
+                <CardHeader className="bg-[#075e54] dark:bg-gray-800 text-white">
+                  <CardTitle className="text-sm">Audio Status</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="space-y-4">
+                    {isRecording && (
+                      <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                        <div className="w-3 h-3 bg-red-600 dark:bg-red-400 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium">Recording in progress</span>
+                      </div>
+                    )}
+                    
+                    {isAISpeaking && (
+                      <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                        <Volume2 className="w-4 h-4" />
+                        <span className="text-sm font-medium">AI is speaking</span>
+                      </div>
+                    )}
+                    
+                    {interimTranscript && (
+                      <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {interimTranscript}<span className="animate-pulse">|</span>
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  
-                  {isRecording && (
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                      <div className="bg-red-500 h-1.5 rounded-full animate-pulse w-full"></div>
-                    </div>
-                  )}
-                  
-                  {interimTranscript && (
-                    <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        {interimTranscript}<span className="animate-pulse">|</span>
-                      </p>
-                    </div>
-                  )}
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Security Status */}
+            <Card>
+              <CardHeader className="bg-[#075e54] dark:bg-gray-800 text-white">
+                <CardTitle className="text-sm">Security Status</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Face Detection</span>
+                    <Badge variant={faceDetectionData?.faceDetected ? "success" : "destructive"}>
+                      {faceDetectionData?.faceDetected ? "Detected" : "Not Detected"}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Security Alerts</span>
+                    <Badge variant={securityAlerts.length > 0 ? "warning" : "success"}>
+                      {securityAlerts.length} Alerts
+                    </Badge>
+                  </div>
                 </div>
               </CardContent>
             </Card>
