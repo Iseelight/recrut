@@ -42,6 +42,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
   const [waitingForUserResponse, setWaitingForUserResponse] = useState(false);
   const [userHasResponded, setUserHasResponded] = useState(false);
   const [isAssessmentTerminated, setIsAssessmentTerminated] = useState(false);
+  const [terminationReason, setTerminationReason] = useState('');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -51,7 +52,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
   const speechRecognitionRef = useRef<any>(null);
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  // Auto-scroll to bottom when new messages arrive - for chat container
+  // Auto-scroll to bottom when new messages arrive - for chat container only
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
@@ -422,17 +423,51 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
     }
   };
 
-  const handleSecurityAlert = (alert: any) => {
-    setSecurityAlerts(prev => [...prev, alert]);
+  const handleSecurityAlert = (alert: SecurityAlert) => {
+    const newAlerts = [...securityAlerts, alert];
+    setSecurityAlerts(newAlerts);
     
     // Check if we need to terminate the assessment
-    if (alert.severity === 'high' || securityAlerts.length >= config.maxViolations) {
-      endAssessment('violation');
+    // Count face_not_detected alerts with high severity
+    const faceNotDetectedCount = newAlerts.filter(
+      a => a.type === 'face_not_detected' && a.severity === 'high'
+    ).length;
+    
+    if (faceNotDetectedCount >= 2 || alert.severity === 'high') {
+      setTerminationReason('Session terminated due to security violations: ' + alert.message);
+      terminateAssessment();
     }
   };
 
   const handleFaceDetectionUpdate = (data: FaceDetectionData) => {
     setFaceDetectionData(data);
+  };
+
+  const terminateAssessment = () => {
+    // Stop recording if active
+    if (isRecording) {
+      stopRecording();
+    }
+    
+    // Stop any ongoing speech
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    
+    setIsAssessmentTerminated(true);
+    
+    const assessmentResult = {
+      questionsAnswered: currentQuestionIndex + 1,
+      totalQuestions: config.questions.length,
+      duration: Math.floor((Date.now() - assessmentStartTime) / 1000 / 60),
+      securityAlertsCount: securityAlerts.length,
+      securityAlerts,
+      messages,
+      terminationReason: terminationReason || 'Session terminated due to security violations'
+    };
+    
+    // Complete assessment immediately
+    onAssessmentComplete(assessmentResult);
   };
 
   const endAssessment = (reason: 'completed' | 'violation') => {
@@ -446,7 +481,10 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
       window.speechSynthesis.cancel();
     }
     
-    setIsAssessmentTerminated(true);
+    if (reason === 'violation') {
+      setTerminationReason('Session terminated due to security violations');
+      setIsAssessmentTerminated(true);
+    }
     
     const assessmentResult = {
       questionsAnswered: currentQuestionIndex + 1,
@@ -754,6 +792,12 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                   messages,
                   terminationReason: 'Session terminated: Looked away from camera twice'
                 };
+                
+                // Immediately set termination reason and terminate assessment
+                setTerminationReason('Session terminated: Looked away from camera twice');
+                setIsAssessmentTerminated(true);
+                
+                // Complete assessment with failure result
                 onAssessmentComplete(result);
               }}
             />
