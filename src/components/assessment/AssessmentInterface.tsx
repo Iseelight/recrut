@@ -40,6 +40,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(true);
   const [waitingForUserResponse, setWaitingForUserResponse] = useState(false);
+  const [userHasResponded, setUserHasResponded] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -49,7 +50,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
   const speechRecognitionRef = useRef<any>(null);
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive - only for chat container
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
@@ -258,6 +259,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
 
     setMessages(prev => [...prev, questionMessage]);
     setWaitingForUserResponse(false);
+    setUserHasResponded(false);
     
     speakText(question, () => {
       // After AI finishes speaking, allow user to respond
@@ -357,6 +359,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setWaitingForUserResponse(false);
+    setUserHasResponded(true);
     
     // Clear audio chunks for next recording
     audioChunksRef.current = [];
@@ -364,19 +367,16 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
     // Simulate AI thinking
     setIsTyping(true);
     
-    // Determine if we should move to the next question or end the assessment
+    // AI acknowledgment after user response
     setTimeout(() => {
       setIsTyping(false);
       
-      const nextQuestionIndex = currentQuestionIndex + 1;
-      
-      // AI acknowledgment
       const acknowledgments = [
-        "Thank you for your response. Let me ask you the next question.",
-        "I appreciate your answer. Moving on to the next question.",
-        "Great response. Here's your next question.",
-        "Thank you. Let's continue with the next question.",
-        "Excellent. Now for the next question."
+        "Thank you for your response.",
+        "I appreciate your answer.",
+        "Thank you for sharing that.",
+        "That's helpful information.",
+        "I understand, thank you."
       ];
       
       const randomAck = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
@@ -391,18 +391,27 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
       setMessages(prev => [...prev, ackMessage]);
       
       speakText(randomAck, () => {
-        // Move to next question after acknowledgment finishes
-        setTimeout(() => {
-          setCurrentQuestionIndex(nextQuestionIndex);
-          
-          if (nextQuestionIndex < config.questions.length) {
-            askQuestion(nextQuestionIndex);
-          } else {
-            endAssessment('completed');
-          }
-        }, 1000);
+        // Wait for user to submit response before moving to next question
+        // The next question will be asked when the user clicks "Next Question" button
+        setWaitingForUserResponse(true);
       });
     }, 1500 + Math.random() * 1000);
+  };
+
+  const handleNextQuestion = () => {
+    if (!userHasResponded) {
+      alert("Please provide a response before moving to the next question.");
+      return;
+    }
+    
+    const nextQuestionIndex = currentQuestionIndex + 1;
+    setCurrentQuestionIndex(nextQuestionIndex);
+    
+    if (nextQuestionIndex < config.questions.length) {
+      askQuestion(nextQuestionIndex);
+    } else {
+      endAssessment('completed');
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -470,7 +479,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#e5ded8] dark:bg-gray-900 p-4 w-full">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4 w-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -488,7 +497,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
           <div className="lg:col-span-2">
             <div className="flex flex-col h-[500px] sm:h-[600px] rounded-lg overflow-hidden shadow-lg">
               {/* Chat Header */}
-              <div className="bg-[#075e54] dark:bg-gray-800 text-white p-4">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                     <Bot className="w-6 h-6 text-white" />
@@ -511,15 +520,15 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                           </div>
                         </span>
                       ) : waitingForUserResponse ? (
-                        <span>online</span>
-                      ) : 'online'}
+                        <span>Waiting for your response</span>
+                      ) : 'Processing...'}
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#e5ded8] dark:bg-gray-900 bg-[url('https://web.whatsapp.com/img/bg-chat-tile-light_a4be8c63045ee0818e91158723c10110.png')] dark:bg-[url('https://web.whatsapp.com/img/bg-chat-tile-dark_a4be8c63045ee0818e91158723c10110.png')] bg-repeat">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-100 dark:bg-gray-800">
                 {messages.map((message) => (
                   <div
                     key={message.id === 'interim-message' ? 'interim-message' : message.id}
@@ -528,18 +537,18 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                     <div
                       className={`max-w-[75%] p-3 rounded-lg relative ${
                         message.sender === 'ai'
-                          ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tr-lg rounded-br-lg rounded-bl-lg'
+                          ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-tr-lg rounded-br-lg rounded-bl-lg'
                           : message.isInterim
-                            ? 'bg-[#dcf8c6] dark:bg-green-700 text-gray-900 dark:text-white rounded-tl-lg rounded-br-lg rounded-bl-lg'
-                            : 'bg-[#dcf8c6] dark:bg-green-700 text-gray-900 dark:text-white rounded-tl-lg rounded-br-lg rounded-bl-lg'
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-gray-900 dark:text-white rounded-tl-lg rounded-br-lg rounded-bl-lg'
+                            : 'bg-blue-600 text-white rounded-tl-lg rounded-br-lg rounded-bl-lg'
                       }`}
                     >
                       {/* Message triangle */}
                       {message.sender === 'ai' && (
-                        <div className="absolute -left-2 top-0 w-0 h-0 border-t-8 border-r-8 border-b-0 border-l-0 border-white dark:border-gray-800"></div>
+                        <div className="absolute -left-2 top-0 w-0 h-0 border-t-8 border-r-8 border-b-0 border-l-0 border-white dark:border-gray-700"></div>
                       )}
                       {message.sender === 'candidate' && !message.isInterim && (
-                        <div className="absolute -right-2 top-0 w-0 h-0 border-t-8 border-l-8 border-b-0 border-r-0 border-[#dcf8c6] dark:border-green-700"></div>
+                        <div className="absolute -right-2 top-0 w-0 h-0 border-t-8 border-l-8 border-b-0 border-r-0 border-blue-600"></div>
                       )}
                       
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -549,7 +558,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                       
                       {/* Audio playback for messages with audio */}
                       {message.audioBlob && (
-                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div className="mt-2 pt-2 border-t border-white/20">
                           <button
                             onClick={() => {
                               if (message.audioBlob) {
@@ -560,9 +569,9 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                             }}
                             className={`flex items-center space-x-1 text-xs ${
                               message.sender === 'candidate' 
-                                ? 'text-gray-700 dark:text-gray-300' 
-                                : 'text-gray-700 dark:text-gray-300'
-                            } hover:opacity-80 transition-opacity`}
+                                ? 'text-white/80 hover:text-white' 
+                                : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                            } transition-opacity`}
                           >
                             <Volume2 className="h-3 w-3" />
                             <span>Play Audio</span>
@@ -582,7 +591,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                 
                 {isTyping && (
                   <div className="flex justify-start">
-                    <div className="bg-white dark:bg-gray-800 p-3 rounded-lg rounded-tl-none">
+                    <div className="bg-white dark:bg-gray-700 p-3 rounded-lg rounded-tl-none">
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -595,25 +604,25 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
               </div>
 
               {/* Input */}
-              <div className="bg-[#f0f2f5] dark:bg-gray-800 p-3">
+              <div className="bg-white dark:bg-gray-700 p-3 border-t border-gray-200 dark:border-gray-600">
                 <div className="flex items-center gap-2">
                   <Button
                     onClick={toggleMicrophone}
-                    variant="ghost"
+                    variant={isRecording ? "destructive" : "outline"}
                     size="icon"
-                    className={`rounded-full ${isRecording ? 'text-red-500 bg-red-100 dark:bg-red-900/20' : 'text-gray-500 dark:text-gray-400'}`}
+                    className="rounded-full"
                     disabled={isTyping || isAISpeaking || !waitingForUserResponse}
                   >
                     {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
                   </Button>
-                  <div className="flex-1 bg-white dark:bg-gray-700 rounded-full">
+                  <div className="flex-1">
                     <textarea
                       ref={textareaRef}
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder={waitingForUserResponse ? "Type a message" : "Waiting for AI to finish..."}
-                      className="w-full resize-none px-4 py-2 border-none rounded-full focus:ring-0 focus:outline-none min-h-[40px] max-h-[120px] bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder={waitingForUserResponse ? "Type your response..." : "Waiting for AI to finish..."}
+                      className="w-full resize-none px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[40px] max-h-[120px] bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       rows={1}
                       disabled={isTyping || isRecording || isAISpeaking || !waitingForUserResponse}
                     />
@@ -621,11 +630,9 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                   <Button 
                     onClick={() => handleSendMessage(inputMessage)}
                     disabled={!inputMessage.trim() || isTyping || isAISpeaking || !waitingForUserResponse}
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full bg-[#075e54] dark:bg-green-700 text-white hover:bg-[#054c44] dark:hover:bg-green-800"
+                    className="px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
-                    <Send className="h-5 w-5" />
+                    <Send className="h-4 w-4" />
                   </Button>
                 </div>
                 
@@ -640,6 +647,18 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                   <div className="mt-2 flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400">
                     <Volume2 className="w-4 h-4" />
                     <span className="text-sm font-medium">AI is speaking... Please wait</span>
+                  </div>
+                )}
+                
+                {/* Next Question Button - Only show when user has responded and AI has acknowledged */}
+                {userHasResponded && waitingForUserResponse && (
+                  <div className="mt-3 flex justify-center">
+                    <Button 
+                      onClick={handleNextQuestion}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      Next Question
+                    </Button>
                   </div>
                 )}
               </div>
@@ -661,7 +680,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
-                      className="bg-[#25d366] dark:bg-green-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-300"
                       style={{
                         width: `${(currentQuestionIndex / config.questions.length) * 100}%`
                       }}
@@ -700,14 +719,14 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
 
             {/* Instructions */}
             <Card>
-              <CardHeader className="bg-[#075e54] dark:bg-gray-800 text-white">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                 <CardTitle className="text-sm">Instructions</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-gray-600 dark:text-gray-400 space-y-2 pt-4">
                 <p>• Click the microphone icon to toggle recording</p>
                 <p>• Or type your response in the text box</p>
                 <p>• Keep your face visible to the camera</p>
-                <p>• Answer all questions to complete the assessment</p>
+                <p>• Click "Next Question" after your response</p>
                 <p>• Stay focused on the screen during the assessment</p>
               </CardContent>
             </Card>
@@ -715,7 +734,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
             {/* Audio Status */}
             {(isRecording || interimTranscript || isAISpeaking) && (
               <Card>
-                <CardHeader className="bg-[#075e54] dark:bg-gray-800 text-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                   <CardTitle className="text-sm">Audio Status</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4">
@@ -748,7 +767,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
             
             {/* Security Status */}
             <Card>
-              <CardHeader className="bg-[#075e54] dark:bg-gray-800 text-white">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                 <CardTitle className="text-sm">Security Status</CardTitle>
               </CardHeader>
               <CardContent className="pt-4">
