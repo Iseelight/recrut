@@ -41,6 +41,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
   const [isMicMuted, setIsMicMuted] = useState(true);
   const [waitingForUserResponse, setWaitingForUserResponse] = useState(false);
   const [userHasResponded, setUserHasResponded] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -52,8 +53,10 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
 
   // Auto-scroll to bottom when new messages arrive - only for chat container
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+    if (autoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isTyping, autoScroll]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -478,6 +481,19 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
     });
   };
 
+  // Handle scroll events to detect if user has scrolled away from bottom
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
+    setAutoScroll(isAtBottom);
+  };
+
+  // Manual scroll to bottom button
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setAutoScroll(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4 w-full">
       <div className="max-w-4xl mx-auto">
@@ -527,8 +543,11 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                 </div>
               </div>
 
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-100 dark:bg-gray-800">
+              {/* Messages - with manual scroll */}
+              <div 
+                className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-100 dark:bg-gray-800"
+                onScroll={handleScroll}
+              >
                 {messages.map((message) => (
                   <div
                     key={message.id === 'interim-message' ? 'interim-message' : message.id}
@@ -602,6 +621,19 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                 )}
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Scroll to bottom button - only visible when not at bottom */}
+              {!autoScroll && (
+                <button 
+                  onClick={scrollToBottom}
+                  className="absolute bottom-20 right-8 bg-blue-600 text-white rounded-full p-2 shadow-lg hover:bg-blue-700 transition-colors"
+                  aria-label="Scroll to bottom"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+              )}
 
               {/* Input */}
               <div className="bg-white dark:bg-gray-700 p-3 border-t border-gray-200 dark:border-gray-600">
@@ -728,6 +760,7 @@ export const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({
                 <p>• Keep your face visible to the camera</p>
                 <p>• Click "Next Question" after your response</p>
                 <p>• Stay focused on the screen during the assessment</p>
+                <p>• Scroll manually to view previous messages</p>
               </CardContent>
             </Card>
             
